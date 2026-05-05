@@ -1246,6 +1246,7 @@ class BasePlatformAdapter(ABC):
         self._post_delivery_callbacks: Dict[str, Any] = {}
         self._expected_cancelled_tasks: set[asyncio.Task] = set()
         self._busy_session_handler: Optional[Callable[[MessageEvent, str], Awaitable[bool]]] = None
+        self._auth_checker: Optional[Callable[["SessionSource"], bool]] = None
         # Auto-TTS on voice input: ``_auto_tts_default`` is the global default
         # (``voice.auto_tts`` in config.yaml, pushed by GatewayRunner on connect).
         # Per-chat overrides live in two sets populated from ``_voice_mode``:
@@ -1395,7 +1396,17 @@ class BasePlatformAdapter(ABC):
     def set_busy_session_handler(self, handler: Optional[Callable[[MessageEvent, str], Awaitable[bool]]]) -> None:
         """Set an optional handler for messages arriving during active sessions."""
         self._busy_session_handler = handler
-    
+
+    def set_auth_checker(self, checker: Optional[Callable[["SessionSource"], bool]]) -> None:
+        """Set an optional callback to check user authorization before processing hooks."""
+        self._auth_checker = checker
+
+    def is_user_authorized(self, source: "SessionSource") -> bool:
+        """Check if a user is authorized via the gateway-provided auth checker."""
+        if self._auth_checker is None:
+            return True
+        return self._auth_checker(source)
+
     def set_session_store(self, session_store: Any) -> None:
         """
         Set the session store for checking active sessions.

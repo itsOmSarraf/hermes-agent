@@ -888,6 +888,28 @@ class SlackAdapter(BasePlatformAdapter):
         except Exception as e:
             logger.debug("[Slack] assistant.threads.setStatus clear failed: %s", e)
 
+
+    async def delete_message(
+        self,
+        chat_id: str,
+        message_id: str,
+    ) -> bool:
+        """Delete a previously sent Slack message."""
+        if not self._app:
+            return False
+
+        try:
+            await self._get_client(chat_id).chat_delete(
+                channel=chat_id,
+                ts=message_id,
+            )
+            return True
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug("[Slack] Failed to delete message: %s", e)
+            return False
+
     def _dm_top_level_threads_as_sessions(self) -> bool:
         """Whether top-level Slack DMs get per-message session threads.
 
